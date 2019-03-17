@@ -55,16 +55,3 @@ while True:
   if len(data):
     result = mine.evaluate(data)
     print result
-
-'''
-t = {
-  CTF = #count-of-t / total#count-all-words
-  STF = #sentences-containing-t / total#-of-sentences
-  DTF = #documents-containing-t / total#-of-documents
-}
-
-Nd = total#-of-documents
-Ns = total#-of-sentences
-Nt = distinct#-of-terms
-'''
-
