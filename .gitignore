@@ -1,0 +1,4 @@
+corpus/*/
+**.pyc
+**.swo
+**.swp
