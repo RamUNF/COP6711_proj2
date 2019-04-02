@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import re
 import signal
@@ -9,6 +10,11 @@ def signal_handler(sig, frame):
   raise SystemExit
 
 signal.signal(signal.SIGINT, signal_handler)
+
+try:
+  printdata = not(re.match('([Yy](es)?)|([Tt](rue)?)',sys.argv[1]) == None)
+except IndexError:
+  printdata = False
 
 try:
   path = sys.argv[1]
@@ -41,6 +47,7 @@ words = stopwords("a about above after again against ain all am an and any are a
 
 mine = corpus(files)
 mine.build(words.words)
+size = len(mine.documents)
 
 print 'Processed %d documents; enter <space/comma-separated> list of words to evaluate (user CTRL+C to terminate):\n'%len(mine.documents)
 
@@ -54,4 +61,23 @@ while True:
 
   if len(data):
     result = mine.evaluate(data)
-    print result
+    vectors = {
+      'TF': [[] for y in range(size)],
+      'TF-IDF': [[] for y in range(size)]
+    }
+
+    for vector in result['TF-IDF'].values():
+      for (i,j) in enumerate(vector['TF']):
+        vectors['TF'][i].append(j)
+        vectors['TF-IDF'][i].append(vector['TF-IDF'][i])
+
+    if printdata:
+      print 'MK: %.6f, SF %.6f'%(result['MK'],result['SF'])
+
+      tf = map(lambda (i,j): j['TF'],enumerate(result['TF-IDF'].values()))
+      tf_idf = map(lambda (i,j): j['TF-IDF'],enumerate(result['TF-IDF'].values()))
+
+      print "TF     :\n",np.matrix(tf),"\n--"
+      print "IDF-TF :\n",np.matrix(tf_idf),"\n--"
+      print "IDF-TF :\n",np.matrix(tf_idf),"\n--"
+      print "VECTORS:\n",np.matrix(vectors['TF']),"\n",np.matrix(vectors['TF-IDF']),"\n--"

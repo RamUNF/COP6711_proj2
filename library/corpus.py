@@ -14,9 +14,9 @@ class corpus:
       self.documents.append(document(p,words))
 
   def evaluate(self,terms):
-    Nd = 0                                #total number of documents
-    Ns = 0                                #total number of sentences across all documents
-    Nt = 0                                #total number of distinct terms across all documents
+    nd = 0                                #total number of documents
+    ns = 0                                #total number of sentences across all documents
+    nt = 0                                #total number of distinct terms across all documents
     Td = []
 
     for (i,term) in enumerate(terms):
@@ -28,15 +28,15 @@ class corpus:
 
       else:
         for document in self.documents:
-          Nd += 1
-          Ns += document.data['ns']
-          Nt += len(document.data['terms'])
+          nd += 1
+          ns += document.data['ns']
+          nt += len(document.data['terms'])
 
           if document.data['terms'].get(term,0):
             Td.append(document)
 
-    ns = 0                                #number of sentences containing all terms being evaluated (t1 ... tK)
-    nd = len(Td)                          #number of documents containing all terms being evaluated (t1 ... tK)
+    Ns = 0                                #number of sentences containing all terms being evaluated (t1 ... tK)
+    Nd = len(Td)                          #number of documents containing all terms being evaluated (t1 ... tK)
 
     for document in Td:
       for sentence in document.sentences:
@@ -44,12 +44,12 @@ class corpus:
           for term in terms:
             if term not in sentence:
               raise Exception
-          ns += 1
+          Ns += 1
         except Exception:
           pass
 
-    DF = nd/float(Nd)                     #document frequency for (t1 ... tK)
-    SF = ns/float(Ns)                     #sentence frequency for (t1 ... tK)
+    DF = Nd/float(nd)                     #document frequency for (t1 ... tK)
+    SF = Ns/float(ns)                     #sentence frequency for (t1 ... tK)
     MK = SF                               #start calculating Measure for association for (t1 ... tK)
 
     data = {}
@@ -63,29 +63,30 @@ class corpus:
 
       MK *= data[term]['IDF']
 
-    return { 'DF': DF, 'SF': SF, 'MK': MK, 'TF-IDF': data }
+    return { 'DF': DF, 'MK': MK, 'SF': SF, 'TF-IDF': data }
 
   def tf_idf(self,term):
+    tf = []
+    tf_idf = []
     Nd = len(self.documents)
     nd = 0
-    tf = 0
-    for document in self.documents:
+    for (i,document) in enumerate(self.documents):
       dtf = document.data['terms'].get(term,0)
       if dtf:
         nd += 1                           #number of documents containing term T
-        tf += dtf                         #number of occurrences for T across all documents
+      tf.append(dtf)
 
     try: 
       idf = math.log(Nd/float(nd),10)     #IDF for term T
     except ZeroDivisionError:
-      idf = math.log(Nd)
-    ctf = tf/float(document.data['nt'])   #TF for term T
+      idf = math.log(Nd,10)
+
+    for i in range(0,Nd):
+      tf_idf.append(idf * tf[i])
 
     self.matrix[term] = {
-      #'nd': nd,
-      'DF': nd/float(Nd),
-      #'dtf': tf,
+      'DF': nd,
+      'TF': tf,
       'IDF': idf,
-      'TF': ctf,
-      'TF-IDF': idf * ctf 
+      'TF-IDF': tf_idf
     }
