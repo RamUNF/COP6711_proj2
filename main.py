@@ -3,8 +3,9 @@ import os
 import re
 import signal
 import sys
-from os.path import join, isdir, isfile
+from os.path import basename, join, isdir, isfile
 from library import corpus, document, stopwords
+from library.cluster import K_means
 
 def signal_handler(sig, frame):
   raise SystemExit
@@ -20,6 +21,8 @@ try:
   path = sys.argv[1]
 except IndexError:
   path = None
+
+k_value = 2
 
 files = []
 while True:
@@ -49,14 +52,17 @@ mine = corpus(files)
 mine.build(words.words)
 size = len(mine.documents)
 
-print 'Processed %d documents; enter <space/comma-separated> list of words to evaluate (user CTRL+C to terminate):\n'%len(mine.documents)
+print 'Processed %d documents; enter K#: <space/comma-separated> list of words to evaluate (user CTRL+C to terminate):\n'%len(mine.documents)
 
 while True:
   data = set()
   terms = re.split('[; ]',raw_input().strip().lower())
 
-  for term in terms:
-    if (len(term) > 1) and (term not in words.words):
+  for i,term in enumerate(terms):
+    if not(i) and re.match('^k?[1-9][0-9]*:',term):
+      k_value = int(re.sub('[^0-9]','',term))
+      print "K-value set to %d" % k_value
+    elif (len(term) > 1) and (term not in words.words):
       data.add(term)
 
   if len(data):
@@ -71,13 +77,19 @@ while True:
         vectors['TF'][i].append(j)
         vectors['TF-IDF'][i].append(vector['TF-IDF'][i])
 
+        tf = map(lambda (i,j): j['TF'],enumerate(result['TF-IDF'].values()))
+        tf_idf = map(lambda (i,j): j['TF-IDF'],enumerate(result['TF-IDF'].values()))
+
     if printdata:
       print 'MK: %.6f, SF %.6f'%(result['MK'],result['SF'])
-
-      tf = map(lambda (i,j): j['TF'],enumerate(result['TF-IDF'].values()))
-      tf_idf = map(lambda (i,j): j['TF-IDF'],enumerate(result['TF-IDF'].values()))
 
       print "TF     :\n",np.matrix(tf),"\n--"
       print "IDF-TF :\n",np.matrix(tf_idf),"\n--"
       print "IDF-TF :\n",np.matrix(tf_idf),"\n--"
       print "VECTORS:\n",np.matrix(vectors['TF']),"\n",np.matrix(vectors['TF-IDF']),"\n--"
+
+    clusters = K_means(k_value, vectors['TF'])
+    for i, cluster in enumerate(clusters):
+        print("Cluster " + str(i))
+        for c in cluster:
+            print "Doc%-2d: %s"%(c,basename(corpus.documents[c].filepath))
