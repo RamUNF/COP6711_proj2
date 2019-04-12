@@ -17,6 +17,9 @@ def cos_sim(x, y):
 #        documents
 def K_means(K, documents):
     assert K > 0
+
+    K = min(K,len(documents))
+
     centroids = random.sample(documents, K)
     clusters = [[] for i in range(K)]
     changed = True
