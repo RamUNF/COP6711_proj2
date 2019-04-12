@@ -5,7 +5,7 @@ import signal
 import sys
 from os.path import basename, join, isdir, isfile
 from library import corpus, document, stopwords
-from library.cluster import K_means
+from library.cluster import agglomerative_cluster, K_means, print_hierarchical
 
 def signal_handler(sig, frame):
   raise SystemExit
@@ -23,6 +23,7 @@ except IndexError:
   path = None
 
 k_value = 2
+freq = 1
 
 files = []
 while True:
@@ -56,40 +57,71 @@ print 'Processed %d documents; enter K#: <space/comma-separated> list of words t
 
 while True:
   data = set()
-  terms = re.split('[; ]',raw_input().strip().lower())
+  terms = re.split('[,; ]',raw_input().strip().lower())
+  fetch_common = False
 
   for i,term in enumerate(terms):
-    if not(i) and re.match('^k?[1-9][0-9]*:',term):
-      k_value = int(re.sub('[^0-9]','',term))
-      print "K-value set to %d" % k_value
-    elif (len(term) > 1) and (term not in words.words):
+    if not(i):
+      if re.match('^[fk][1-9][0-9]*:',term):
+        pos = term.find(':')
+        if term[:1] == 'f':
+          freq = int(re.sub('[^0-9]','',term[:pos]))
+          print "Frequency set to %d" % freq
+        else:
+          k_value = int(re.sub('[^0-9]','',term[:pos]))
+          print "K-value set to %d" % k_value
+
+        term = term[(pos + 1):]
+
+      if (term == '*'):
+        fetch_common = True
+        break;
+
+    if (len(term) > 1) and (term not in words.words):
       data.add(term)
 
-  if len(data):
-    result = mine.evaluate(data)
-    vectors = {
-      'TF': [[] for y in range(size)],
-      'TF-IDF': [[] for y in range(size)]
-    }
+  if len(data) or fetch_common:
+    result = mine.evaluate(None if fetch_common else data,freq)
+    if result:
+      vectors = {
+        'TF': [[] for y in range(size)],
+        'TF-IDF': [[] for y in range(size)]
+      }
 
-    for vector in result['TF-IDF'].values():
-      for (i,j) in enumerate(vector['TF']):
-        vectors['TF'][i].append(j)
-        vectors['TF-IDF'][i].append(vector['TF-IDF'][i])
+      for vector in result['TF-IDF'].values():
+        for (i,j) in enumerate(vector['TF']):
+          vectors['TF'][i].append(j)
+          vectors['TF-IDF'][i].append(vector['TF-IDF'][i])
 
-        tf = map(lambda (i,j): j['TF'],enumerate(result['TF-IDF'].values()))
-        tf_idf = map(lambda (i,j): j['TF-IDF'],enumerate(result['TF-IDF'].values()))
+          tf = map(lambda (i,j): j['TF'],enumerate(result['TF-IDF'].values()))
+          tf_idf = map(lambda (i,j): j['TF-IDF'],enumerate(result['TF-IDF'].values()))
 
-    if printdata:
-      print 'MK: %.6f, SF %.6f'%(result['MK'],result['SF'])
+      if printdata:
+        print "<==================================================>"
+        print 'MK: %.6f, SF %.6f'%(result['MK'],result['SF'])
 
-      print "TF     :\n",np.matrix(tf),"\n--"
-      print "IDF-TF :\n",np.matrix(tf_idf),"\n--"
-      print "IDF-TF :\n",np.matrix(tf_idf),"\n--"
-      print "VECTORS:\n",np.matrix(vectors['TF']),"\n",np.matrix(vectors['TF-IDF']),"\n--"
+        print "TF     :\n",np.matrix(tf),"\n--"
+        print "IDF-TF :\n",np.matrix(tf_idf),"\n--"
+        print "IDF-TF :\n",np.matrix(tf_idf),"\n--"
+        print "VECTORS:\n",np.matrix(vectors['TF']),"\n",np.matrix(vectors['TF-IDF']),"\n--"
 
-    clusters = K_means(k_value, vectors['TF'])
-    for i, cluster in enumerate(clusters):
-        print("Cluster " + str(i))
-        for c in cluster:
-            print "Doc%-2d: %s"%(c,basename(corpus.documents[c].filepath))
+      print "<==================================================>"
+      clusters = K_means(k_value, vectors['TF'])
+      for i, cluster in enumerate(clusters):
+          print("Cluster[TF] " + str(i))
+          for c in cluster:
+              print "Doc%-2d: %s"%(c,basename(corpus.documents[c].filepath))
+
+      print "<==================================================>"
+      clusters = K_means(k_value, vectors['TF-IDF'])
+      for i, cluster in enumerate(clusters):
+          print("Cluster[TF-IDF] " + str(i))
+          for c in cluster:
+              print "Doc%-2d: %s"%(c,basename(corpus.documents[c].filepath))
+
+      clusters = agglomerative_cluster(vectors['TF'])
+      print "<==================================================>"
+      print_hierarchical(clusters)
+    else:
+      print "<==================================================>"
+      print "No can do amigo"

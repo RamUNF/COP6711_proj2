@@ -1,4 +1,4 @@
-import math
+import copy, math
 from .document import document
 
 class corpus:
@@ -13,20 +13,36 @@ class corpus:
     for p in self.files:
       self.documents.append(document(p,words))
 
-  def evaluate(self,terms):
+  def evaluate(self,termset,freq):
     nd = 0                                #total number of documents
     ns = 0                                #total number of sentences across all documents
     nt = 0                                #total number of distinct terms across all documents
     Td = []
+    reveal = False
 
-    for (i,term) in enumerate(terms):
-      if i:
-        for j in reversed(range(len(Td))):
-          document = Td[j]
-          if not document.data['terms'].get(term,0):
-            del(Td[j])
+    if termset == None:
+      termset = copy.copy(next(iter(self.documents)).data['terms'])
+      reveal = True
 
-      else:
+    Tf = [0 for y in range(len(termset))]
+    terms = []
+
+    for (i,term) in enumerate(termset):
+      for document in self.documents:
+        Tf[i] += document.data['terms'].get(term,0)
+
+    consider = True
+    for (i,term) in enumerate(termset):
+      if Tf[i] < freq:
+        continue
+
+      if reveal:
+        print term,Tf[i]
+
+      terms.append(term)
+
+      if consider:
+        consider = False
         for document in self.documents:
           nd += 1
           ns += document.data['ns']
@@ -35,8 +51,18 @@ class corpus:
           if document.data['terms'].get(term,0):
             Td.append(document)
 
+      else:
+        for j in reversed(range(len(Td))):
+          document = Td[j]
+
+          if not document.data['terms'].get(term,0):
+            del(Td[j])
+
     Ns = 0                                #number of sentences containing all terms being evaluated (t1 ... tK)
     Nd = len(Td)                          #number of documents containing all terms being evaluated (t1 ... tK)
+
+    if not Nd:
+      return None
 
     for document in Td:
       for sentence in document.sentences:
