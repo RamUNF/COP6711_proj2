@@ -23,7 +23,7 @@ except IndexError:
   path = None
 
 k_value = 2
-freq = 1
+freq = 15
 
 files = []
 while True:
