@@ -4,10 +4,13 @@ import random
 #Input: Two document vectors x and y
 #Output: The cosine similarity of the two vectors
 def cos_sim(x, y):
-    assert len(x) == len(y)
+    assert len(x) == len(y),"Length of vectors differs"
     x_norm = np.linalg.norm(x)
     y_norm = np.linalg.norm(y)
     dot = np.dot(x,y)
+
+    if dot == 0:
+        return 0
     return dot / (x_norm * y_norm)
 
 #Input: K, number of clusters to discover
@@ -41,7 +44,10 @@ def K_means(K, documents):
             doc_vectors = []
             for d in clusters[i]:
                 doc_vectors.append(documents[d])
-            centroids[i] = np.mean(doc_vectors, axis=0)
+            if len(doc_vectors) > 0:
+                centroids[i] = np.mean(doc_vectors, axis=0)
+            else:
+                centroids[i] = np.zeros(len(old_centroid))
             if (abs(old_centroid - centroids[i]) > 0.01).any():
                 changed = True
 
@@ -125,11 +131,9 @@ def print_hierarchical(cluster, level=0):
 
 if __name__ == "__main__":
     doc1 = [5, 0, 3, 0, 2, 0, 0, 2, 0, 0]
-    doc2 = [3, 0, 2, 0, 1, 1, 0, 1, 0, 1]
-    doc3 = [0, 7, 0, 2, 1, 0, 0, 3, 0, 0]
-    doc4 = [0, 1, 0, 0, 1, 2, 2, 0, 3, 0]
-    doc5 = [1, 0, 0, 0, 1, 2, 2, 0, 3, 0]
-    corpus = [doc1, doc2, doc3, doc4, doc5]
+    doc2 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    doc3 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    corpus = [doc1, doc2, doc3]
 
     print("K-means")
     clusters = K_means(2, corpus)
