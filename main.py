@@ -121,7 +121,7 @@ while True:
 
       clusters = agglomerative_cluster(vectors['TF'])
       print "<==================================================>"
-      print_hierarchical(clusters)
+      print_hierarchical(clusters, list(vectors['TF']))
     else:
       print "<==================================================>"
       print "No can do amigo"
