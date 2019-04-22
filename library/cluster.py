@@ -68,7 +68,7 @@ class Cluster:
 #This method uses the average of the vectors in the cluster to compute similarity between clusters (as opposed to single or complete link or other techniques)
 def agglomerative_cluster(documents):
     
-
+    documents = list(documents)
     clusters = []    
     while(len(documents) > 1):
         d1 = documents[0]
@@ -118,14 +118,18 @@ def agglomerative_cluster(documents):
 #Input: A Cluster object
 #Output: None
 #Side-effects: Prints the hierarchical clustering to console.
-def print_hierarchical(cluster, level=0):
+def print_hierarchical(cluster, documents, level=0):
     if isinstance(cluster, Cluster):
         print('-' * level + "Level " + str(level))
-        print_hierarchical(cluster.child1, level+1)
-        print_hierarchical(cluster.child2, level+1)
+        print_hierarchical(cluster.child1, documents, level+1)
+        print_hierarchical(cluster.child2, documents, level+1)
     else:
         if(cluster is not None):
-            print('-' * level + str(cluster))
+            for i, d in enumerate(documents):
+                if d == cluster:
+                    documents[i] = None
+                    print('-' * level + "Doc" + str(i))
+                
         
     
 
